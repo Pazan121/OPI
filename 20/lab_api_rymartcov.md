@@ -258,6 +258,7 @@ OrderService → KafkaProducer → KafkaConsumer → WebhookSenderService → We
 ```
 
 ![Spring Boot Kafka logs](images/task8-spring-logs.png)
+![Spring Boot Kafka logs](images/task8-spring-logs2.png)
 
 ---
 
