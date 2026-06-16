@@ -168,29 +168,97 @@ docker compose ps
 
 # Завдання 6 — Команда для викладача
 
-Для запуску проєкту викладачеві достатньо отримати репозиторій з проєктом, перейти в його папку та виконати одну команду Docker Compose.
+Для фінального запуску курсового проєкту було використано варіант із публікацією Docker-образу в Docker Hub. Оскільки проєкт «Кава-машина» використовує базу даних MySQL, одного запуску через `docker run` недостатньо. Для коректної роботи потрібно одночасно запустити застосунок і базу даних, тому використовується `docker-compose.yml`.
 
-```bash id="v8bl40"
-git clone <посилання-на-репозиторій>
-cd coffe-machine
-docker compose up -d --build
+Локальний образ застосунку було позначено тегом Docker Hub:
+
+```bash
+docker tag rymartcov-coursework:1.0 pazan12/coursework:1.0
 ```
 
-Основна команда запуску в папці проєкту:
+Після цього образ було завантажено в Docker Hub:
 
-```bash id="txjdy8"
-docker compose up -d --build
+```bash
+docker push pazan12/coursework:1.0
 ```
 
-Після запуску застосунок буде доступний за адресою:
+Опублікований образ застосунку:
 
-```text id="ngk0bf"
+```text
+pazan12/coursework:1.0
+```
+
+![Успішне завантаження образу в Docker Hub](images/push.png)
+
+Для запуску проєкту викладачеві потрібно мати файл `docker-compose.yml`, у якому сервіс `app` використовує готовий образ із Docker Hub:
+
+```yaml
+services:
+  db:
+    image: mysql:8.4
+    container_name: coursework-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: coffe_machine
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    image: pazan12/coursework:1.0
+    container_name: coursework-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/coffe_machine?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
+```
+
+![Файл docker-compose.yml для запуску застосунку з базою даних](images/compose-file.png)
+
+Фінальна команда для викладача:
+
+```bash
+docker compose up -d
+```
+
+Після виконання цієї команди Docker Compose автоматично завантажує образ `pazan12/coursework:1.0` з Docker Hub, запускає контейнер застосунку `coursework-app` і контейнер бази даних `coursework-db`.
+
+Після запуску перевірка виконується командою:
+
+```bash
+docker compose ps
+```
+
+У результаті мають бути запущені два контейнери:
+
+```text
+coursework-app
+coursework-db
+```
+
+![Перевірка запущених контейнерів](images/compose-ps.png)
+
+Після запуску застосунок доступний у браузері за адресою:
+
+```text
 http://localhost:8080
 ```
 
-Було перевірено, що після запуску через Docker Compose база даних і застосунок стартують разом, а сторінка курсового проєкту відкривається у браузері.
-
----
+![Працюючий застосунок у браузері](images/app.png)
 
 # Відповіді на питання
 
